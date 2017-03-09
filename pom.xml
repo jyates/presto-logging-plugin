@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <version>1.0</version>
+    <groupId>com.shopify.presto</groupId>
+
+
+    <artifactId>logging-plugin</artifactId>
+    <description>Shopify logging plugin</description>
+
+    <properties>
+        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>log</artifactId>
+            <version>0.139</version>
+        </dependency>
+        <!-- Presto SPI -->
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-spi</artifactId>
+            <scope>provided</scope>
+            <version>0.164</version>
+        </dependency>
+
+    </dependencies>
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources/services</directory>
+                <targetPath>META-INF/services</targetPath>
+                <includes>
+                    <include>com.facebook.presto.spi.Plugin</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+</project>
