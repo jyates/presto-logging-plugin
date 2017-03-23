@@ -1,6 +1,6 @@
 deb do
     name "presto-logging-plugin-shopify"
-    version "1.0"
+    version "1.1"
     release 1
     description "A plugin to log query texts to stdout"
     dependencies []
@@ -16,6 +16,7 @@ deb do
         run "install -d 0700 #{deb_dir}/u/apps/presto/current/plugin/logging-plugin"
         run "install target/logging-plugin-#{@version}.jar #{deb_dir}/u/apps/presto/current/plugin/logging-plugin"
         run "install log-0.139.jar #{deb_dir}/u/apps/presto/current/plugin/logging-plugin"
-        run "install event-listener.properties #{deb_dir}/u/apps/presto/current/etc"
+        run "install -d 0700 #{deb_dir}/u/apps/presto/etc"
+        run "install event-listener.properties #{deb_dir}/u/apps/presto/etc/event-listener.properties"
     end
 end
