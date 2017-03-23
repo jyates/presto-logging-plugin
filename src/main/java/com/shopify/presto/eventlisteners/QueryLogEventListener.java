@@ -27,7 +27,7 @@ public class QueryLogEventListener implements EventListener
     @Override
     public void queryCompleted(QueryCompletedEvent queryCompletedEvent)
     {
-        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text " + queryCompletedEvent.getMetadata().getQuery());
-        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time" + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60.0 + " wall time (minutes) " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
+        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
+        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
     }
 }
