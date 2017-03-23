@@ -1,6 +1,6 @@
 deb do
     name "presto-logging-plugin-shopify"
-    version "1.1"
+    version "1.2"
     release 1
     description "A plugin to log query texts to stdout"
     dependencies []
