@@ -29,6 +29,6 @@ public class QueryLogEventListenerFactory implements EventListenerFactory
     @Override
     public EventListener create(Map<String, String> config)
     {
-        return new QueryLogEventListener();
+        return new QueryLogEventListener(config);
     }
 }

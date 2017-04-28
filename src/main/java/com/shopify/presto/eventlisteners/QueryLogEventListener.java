@@ -22,17 +22,22 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.json.JSONObject;
 
+import java.util.Map;
 import java.util.Properties;
 
 public class QueryLogEventListener implements EventListener
 {
     private static final Logger log = Logger.get(QueryLogEventListener.class);
     private Producer<String, String> producer;
-    private static final String TOPIC_NAME = "data_infrastructure_presto_queries";
+    private static String TOPIC_NAME;
 
-    public QueryLogEventListener() {
+    public QueryLogEventListener(Map<String, String> config) {
+        String kafka_broker = config.get("kafka-broker");
+        TOPIC_NAME = config.get("kafka-topic-name");
+
+
         Properties props = new Properties();
-        props.put("bootstrap.servers", "kafka1.chi2.shopifydc.com:9092");
+        props.put("bootstrap.servers", kafka_broker + ":9092");
         props.put("acks", "all");
         props.put("retries", 0);
         props.put("batch.size", 16384);
@@ -49,6 +54,8 @@ public class QueryLogEventListener implements EventListener
     {
         JSONObject queryEventJson = new JSONObject();
 
+        boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
+
         queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
         queryEventJson.put("cpu_time", queryCompletedEvent.getStatistics().getCpuTime().getSeconds());
         queryEventJson.put("wall_time", queryCompletedEvent.getStatistics().getWallTime().getSeconds());
@@ -56,15 +63,12 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("end_time", queryCompletedEvent.getEndTime().toString());
         queryEventJson.put("queued_time", queryCompletedEvent.getStatistics().getQueuedTime().getSeconds());
         queryEventJson.put("query_text", queryCompletedEvent.getMetadata().getQuery());
-        if (queryCompletedEvent.getFailureInfo().isPresent()) {
-            queryEventJson.put("failure_message", queryCompletedEvent.getFailureInfo().get().getErrorCode().getName());
-        }
-        else {
-            queryEventJson.put("failure_message", "SUCCESS");
-        }
+        queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
+        queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
 
         producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
         log.info("Sending to Kafka: " + queryEventJson.toString());
+        log.info("Topic Name:" + TOPIC_NAME);
         log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
         log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
     }
