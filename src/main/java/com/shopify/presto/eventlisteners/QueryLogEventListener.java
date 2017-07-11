@@ -65,6 +65,7 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("query_text", queryCompletedEvent.getMetadata().getQuery());
         queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
+        queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
 
         producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
         log.info("Sending to Kafka: " + queryEventJson.toString());
