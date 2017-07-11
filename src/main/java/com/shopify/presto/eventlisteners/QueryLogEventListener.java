@@ -16,18 +16,61 @@ package com.shopify.presto.eventlisteners;
 import com.facebook.presto.spi.eventlistener.EventListener;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
 import io.airlift.log.Logger;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.json.JSONObject;
 
-/**
- * Created by jackmccracken on 2017-02-09.
- */
+import java.util.Map;
+import java.util.Properties;
+
 public class QueryLogEventListener implements EventListener
 {
     private static final Logger log = Logger.get(QueryLogEventListener.class);
+    private static String TOPIC_NAME;
+    private Producer<String, String> producer;
+
+    public QueryLogEventListener(Map<String, String> config)
+    {
+        String kafkaBrokerList = config.get("kafka-broker-list");
+        String acksValue = config.getOrDefault("acks", "0");
+        Properties props = new Properties();
+        TOPIC_NAME = config.get("kafka-topic-name");
+
+        props.put("bootstrap.servers", kafkaBrokerList);
+        props.put("acks", acksValue);
+        props.put("retries", 0);
+        props.put("batch.size", 16384);
+        props.put("linger.ms", 1);
+        props.put("buffer.memory", 33554432);
+        props.put("key.serializer", StringSerializer.class);
+        props.put("value.serializer", StringSerializer.class);
+
+        producer = new KafkaProducer<>(props);
+    }
 
     @Override
     public void queryCompleted(QueryCompletedEvent queryCompletedEvent)
     {
-        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
-        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
+        JSONObject queryEventJson = new JSONObject();
+        boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
+
+        queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
+        queryEventJson.put("cpu_time", queryCompletedEvent.getStatistics().getCpuTime().getSeconds());
+        queryEventJson.put("wall_time", queryCompletedEvent.getStatistics().getWallTime().getSeconds());
+        queryEventJson.put("start_time", queryCompletedEvent.getCreateTime().toString());
+        queryEventJson.put("end_time", queryCompletedEvent.getEndTime().toString());
+        queryEventJson.put("queued_time", queryCompletedEvent.getStatistics().getQueuedTime().getSeconds());
+        queryEventJson.put("query_text", queryCompletedEvent.getMetadata().getQuery());
+        queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
+        queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
+        queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
+
+        log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
+
+        producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
+        log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
+        log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
     }
 }

@@ -18,9 +18,6 @@ import com.facebook.presto.spi.eventlistener.EventListenerFactory;
 
 import java.util.Map;
 
-/**
- * Created by jackmccracken on 2017-02-09.
- */
 public class QueryLogEventListenerFactory implements EventListenerFactory
 {
     @Override
@@ -32,6 +29,6 @@ public class QueryLogEventListenerFactory implements EventListenerFactory
     @Override
     public EventListener create(Map<String, String> config)
     {
-        return new QueryLogEventListener();
+        return new QueryLogEventListener(config);
     }
 }

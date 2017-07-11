@@ -19,9 +19,6 @@ import com.facebook.presto.spi.eventlistener.EventListenerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/**
- * Created by jackmccracken on 2017-02-16.
- */
 public class LoggingPlugin implements Plugin
 {
     @Override
