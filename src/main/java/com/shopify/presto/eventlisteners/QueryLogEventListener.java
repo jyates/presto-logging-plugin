@@ -28,17 +28,18 @@ import java.util.Properties;
 public class QueryLogEventListener implements EventListener
 {
     private static final Logger log = Logger.get(QueryLogEventListener.class);
-    private Producer<String, String> producer;
     private static String TOPIC_NAME;
+    private Producer<String, String> producer;
 
-    public QueryLogEventListener(Map<String, String> config) {
-        String kafka_broker = config.get("kafka-broker");
+    public QueryLogEventListener(Map<String, String> config)
+    {
+        String kafkaBrokerList = config.get("kafka-broker-list");
+        String acksValue = config.getOrDefault("acks", "0");
+        Properties props = new Properties();
         TOPIC_NAME = config.get("kafka-topic-name");
 
-
-        Properties props = new Properties();
-        props.put("bootstrap.servers", kafka_broker + ":9092");
-        props.put("acks", "all");
+        props.put("bootstrap.servers", kafkaBrokerList);
+        props.put("acks", acksValue);
         props.put("retries", 0);
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
@@ -53,7 +54,6 @@ public class QueryLogEventListener implements EventListener
     public void queryCompleted(QueryCompletedEvent queryCompletedEvent)
     {
         JSONObject queryEventJson = new JSONObject();
-
         boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
 
         queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
@@ -67,10 +67,10 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
 
+        log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
+
         producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
-        log.info("Sending to Kafka: " + queryEventJson.toString());
-        log.info("Topic Name:" + TOPIC_NAME);
-        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
-        log.info("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
+        log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
+        log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
     }
 }
