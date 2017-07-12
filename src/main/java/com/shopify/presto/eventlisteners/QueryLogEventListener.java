@@ -33,6 +33,10 @@ public class QueryLogEventListener implements EventListener
 
     public QueryLogEventListener(Map<String, String> config)
     {
+        if (!config.containsKey("kafka-broker-list") || !config.containsKey("kafka-topic-name")) {
+            log.warn("Event listener plugin properties are not set.");
+            return;
+        }
         String kafkaBrokerList = config.get("kafka-broker-list");
         String acksValue = config.getOrDefault("acks", "0");
         Properties props = new Properties();
@@ -53,6 +57,10 @@ public class QueryLogEventListener implements EventListener
     @Override
     public void queryCompleted(QueryCompletedEvent queryCompletedEvent)
     {
+        if (producer == null) {
+            log.debug("Kafka Producer is not set. Presto logs will not be written to Kafka!");
+            return;
+        }
         JSONObject queryEventJson = new JSONObject();
         boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
 
