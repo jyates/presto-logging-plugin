@@ -24,6 +24,8 @@ import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.Properties;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class QueryLogEventListener implements EventListener
 {
@@ -77,11 +79,21 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
+        queryEventJson.put("event_timestamp", getCurrentTimeStamp());
 
         log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
 
         producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
         log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
         log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
+    }
+
+    public static String getCurrentTimeStamp()
+    {
+        long yourmilliseconds = System.currentTimeMillis();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        Date resultdate = new Date(yourmilliseconds);
+        String strDate = sdf.format(resultdate);
+        return strDate;
     }
 }
