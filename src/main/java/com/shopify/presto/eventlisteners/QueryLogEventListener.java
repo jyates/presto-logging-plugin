@@ -29,11 +29,12 @@ public class QueryLogEventListener implements EventListener
 {
     private static final Logger log = Logger.get(QueryLogEventListener.class);
     private static String TOPIC_NAME;
+    private static String SERVICE_NAME;
     private Producer<String, String> producer;
 
     public QueryLogEventListener(Map<String, String> config)
     {
-        if (!config.containsKey("kafka-broker-list") || !config.containsKey("kafka-topic-name")) {
+        if (!config.containsKey("kafka-broker-list") || !config.containsKey("kafka-topic-name") || !config.containsKey("service-name")) {
             log.warn("Event listener plugin properties are not set.");
             return;
         }
@@ -41,6 +42,7 @@ public class QueryLogEventListener implements EventListener
         String acksValue = config.getOrDefault("acks", "0");
         Properties props = new Properties();
         TOPIC_NAME = config.get("kafka-topic-name");
+        SERVICE_NAME = config.get("service-name");
 
         props.put("bootstrap.servers", kafkaBrokerList);
         props.put("acks", acksValue);
@@ -64,6 +66,7 @@ public class QueryLogEventListener implements EventListener
         JSONObject queryEventJson = new JSONObject();
         boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
 
+        queryEventJson.put("service_name", SERVICE_NAME);
         queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
         queryEventJson.put("cpu_time", queryCompletedEvent.getStatistics().getCpuTime().getSeconds());
         queryEventJson.put("wall_time", queryCompletedEvent.getStatistics().getWallTime().getSeconds());
