@@ -79,7 +79,7 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
-        queryEventJson.put("event_timestamp", getCurrentTimeStamp());
+        queryEventJson.put("event_timestamp", getCurrentTimeStamp("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
         log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
 
@@ -88,12 +88,11 @@ public class QueryLogEventListener implements EventListener
         log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
     }
 
-    public static String getCurrentTimeStamp()
+    public static String getCurrentTimeStamp(String datePattern)
     {
-        long yourmilliseconds = System.currentTimeMillis();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        Date resultdate = new Date(yourmilliseconds);
-        String strDate = sdf.format(resultdate);
-        return strDate;
+        long currentTimeMilliseconds = System.currentTimeMillis();
+        SimpleDateFormat sdf = new SimpleDateFormat(datePattern);
+        Date resultdate = new Date(currentTimeMilliseconds);
+        return sdf.format(resultdate);
     }
 }
