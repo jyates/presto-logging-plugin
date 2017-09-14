@@ -80,6 +80,8 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
+        queryEventJson.put("inputs", queryCompletedEvent.getIoMetadata().getInputs());
+        queryEventJson.put("output", queryCompletedEvent.getIoMetadata().getOutput());
         queryEventJson.put("event_timestamp", getCurrentTimeStamp(sdf));
 
         log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
