@@ -77,6 +77,7 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("end_time", queryCompletedEvent.getEndTime().toString());
         queryEventJson.put("queued_time", queryCompletedEvent.getStatistics().getQueuedTime().getSeconds());
         queryEventJson.put("query_text", queryCompletedEvent.getMetadata().getQuery());
+        queryEventJson.put("field_names", queryCompletedEvent.getIoMetadata().getFieldNames());
         queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
