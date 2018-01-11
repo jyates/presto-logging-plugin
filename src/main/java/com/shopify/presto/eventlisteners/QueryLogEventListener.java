@@ -32,6 +32,11 @@ public class QueryLogEventListener implements EventListener
     private static final Logger log = Logger.get(QueryLogEventListener.class);
     private static String TOPIC_NAME;
     private static String SERVICE_NAME;
+    private static String SSL_TRUSTSTORE_LOCATION = System.getenv("SSL_TRUSTSTORE_LOCATION");
+    private static String SSL_TRUSTSTORE_PASS = System.getenv("SSL_TRUSTSTORE_PASS");
+    private static String SSL_KEYSTORE_PASS = System.getenv("SSL_KEYSTORE_PASS");
+    private static String SSL_KEYSTORE_LOCATION = System.getenv("SSL_KEYSTORE_LOCATION");
+    private static String SSL_KEY_PASSWORD = System.getenv("SSL_KEY_PASSWORD");
     private Producer<String, String> producer;
 
     public QueryLogEventListener(Map<String, String> config)
@@ -46,6 +51,7 @@ public class QueryLogEventListener implements EventListener
         TOPIC_NAME = config.get("kafka-topic-name");
         SERVICE_NAME = config.get("service-name");
 
+
         props.put("bootstrap.servers", kafkaBrokerList);
         props.put("acks", acksValue);
         props.put("retries", 0);
@@ -54,6 +60,17 @@ public class QueryLogEventListener implements EventListener
         props.put("buffer.memory", 33554432);
         props.put("key.serializer", StringSerializer.class);
         props.put("value.serializer", StringSerializer.class);
+
+        //if we have all SSL properties set...
+        if(!SSL_TRUSTSTORE_LOCATION.isEmpty() && !SSL_TRUSTSTORE_PASS.isEmpty() && !SSL_KEYSTORE_LOCATION.isEmpty() &&
+                !SSL_KEYSTORE_PASS.isEmpty() && !SSL_KEY_PASSWORD.isEmpty()) {
+            props.put("ssl.client.auth", "requested");
+            props.put("ssl.keystore.location", SSL_KEYSTORE_LOCATION);
+            props.put("ssl.keystore.password", SSL_KEYSTORE_PASS);
+            props.put("ssl.truststore.location", SSL_TRUSTSTORE_LOCATION);
+            props.put("ssl.truststore.password", SSL_TRUSTSTORE_PASS);
+            props.put("ssl.key.password", SSL_KEY_PASSWORD);
+        }
 
         producer = new KafkaProducer<>(props);
     }
