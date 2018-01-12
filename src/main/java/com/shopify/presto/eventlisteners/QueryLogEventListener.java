@@ -46,7 +46,6 @@ public class QueryLogEventListener implements EventListener
         TOPIC_NAME = config.get("kafka-topic-name");
         SERVICE_NAME = config.get("service-name");
 
-
         props.put("bootstrap.servers", kafkaBrokerList);
         props.put("acks", acksValue);
         props.put("retries", 0);
@@ -59,8 +58,6 @@ public class QueryLogEventListener implements EventListener
         props.put("security.protocol", config.getOrDefault("security-protocol", "PLAINTEXT"));
         props.put("ssl.keystore.location", config.getOrDefault("ssl-keystore-location", null));
         props.put("ssl.keystore.password", config.getOrDefault("ssl-keystore-password", null));
-        props.put("ssl.truststore.location", config.getOrDefault("ssl-truststore-location", null));
-        props.put("ssl.truststore.password", config.getOrDefault("ssl-truststore-password", null));
         props.put("ssl.key.password", config.getOrDefault("ssl-key-password", null));
 
         producer = new KafkaProducer<>(props);
@@ -103,4 +100,5 @@ public class QueryLogEventListener implements EventListener
         Date resultDate = new Date(currentTimeMilliseconds);
         return sdf.format(resultDate);
     }
+
 }
