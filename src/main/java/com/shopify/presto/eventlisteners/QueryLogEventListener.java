@@ -56,7 +56,7 @@ public class QueryLogEventListener implements EventListener
         props.put("key.serializer", StringSerializer.class);
         props.put("value.serializer", StringSerializer.class);
         props.put("ssl.client.auth", "requested");
-        props.put("security.protocol", config.getOrDefault("ssl-security-protocol", "PLAINTEXT"));
+        props.put("security.protocol", config.getOrDefault("security-protocol", "PLAINTEXT"));
         props.put("ssl.keystore.location", config.getOrDefault("ssl-keystore-location", null));
         props.put("ssl.keystore.password", config.getOrDefault("ssl-keystore-password", null));
         props.put("ssl.truststore.location", config.getOrDefault("ssl-truststore-location", null));
