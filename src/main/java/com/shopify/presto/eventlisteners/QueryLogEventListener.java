@@ -87,6 +87,16 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
         queryEventJson.put("event_timestamp", getCurrentTimeStamp(sdf));
 
+        try {
+            // Try to parse the query and get information about the tables involved
+            QueryDetails queryDetails = QueryDetails.parseQueryDetails(queryCompletedEvent.getMetadata().getQuery());
+            queryEventJson.put("query_operation", queryDetails.getOperation());
+            queryEventJson.put("query_target_table", queryDetails.getTargetTable());
+            queryEventJson.put("query_from_tables", queryDetails.getFromTablesWithoutCTEs().toArray());
+        } catch (Throwable t) {
+            log.warn("Error parsing query, not including details: " + t.getMessage());
+        }
+
         log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
 
         producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
