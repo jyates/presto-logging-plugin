@@ -20,34 +20,84 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import com.google.api.core.ApiFuture;
+import com.google.api.core.ApiFutureCallback;
+import com.google.api.core.ApiFutures;
+import com.google.api.gax.rpc.ApiException;
+import com.google.cloud.pubsub.v1.Publisher;
+import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.PubsubMessage;
+
+
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class QueryLogEventListener implements EventListener
-{
-    private static final Logger log = Logger.get(QueryLogEventListener.class);
+public class QueryLogEventListener implements EventListener {
+    private static final Logger LOG = Logger.get(QueryLogEventListener.class);
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static String TOPIC_NAME;
     private static String SERVICE_NAME;
+    private static boolean USE_KAFKA;
+    private static boolean USE_PUBSUB;
     private Producer<String, String> producer;
+    private Publisher publisher = null;
 
-    public QueryLogEventListener(Map<String, String> config)
-    {
-        if (!config.containsKey("kafka-broker-list") || !config.containsKey("kafka-topic-name") || !config.containsKey("service-name")) {
-            log.warn("Event listener plugin properties are not set.");
+
+    public QueryLogEventListener(Map<String, String> config) {
+        USE_KAFKA = Boolean.valueOf(config.getOrDefault("use-kafka", "false"));
+        USE_PUBSUB = Boolean.valueOf(config.getOrDefault("use-pubsub", "false"));
+
+        if(!config.containsKey("service-name")) {
+            LOG.warn("Logging Plugin requires [service-name] to be set. Logging plugin will be ignored.");
             return;
         }
-        String kafkaBrokerList = config.get("kafka-broker-list");
-        String acksValue = config.getOrDefault("acks", "0");
+
+        if (!USE_KAFKA && !USE_PUBSUB) {
+            LOG.warn("Logging Plugin requires [use-kafka] or [use-pubsub] set! Logging plugin will be ignored.");
+            return;
+        }
+
+        if(USE_KAFKA) {
+            producer = kafkaProducer(config);
+            if(producer == null) {
+                LOG.warn("Kafka Producer not setup. Ignoring Producing to Kafka.");
+                USE_KAFKA = false;
+            }
+        }
+
+        if(USE_PUBSUB) {
+            try {
+                publisher = pubSubPublisher(config);
+            } catch (IOException e) {
+                LOG.error("PubSub Publisher not setup. Ignoring Publishing to PubSub.");
+                USE_PUBSUB = false;
+            }
+        }
+    }
+    private Publisher pubSubPublisher(Map<String, String> config) throws IOException {
+        if(!config.containsKey("pubsub-topic-name")) {
+            LOG.warn("Logging Plugin requires [pubsub-topic-name] when using PubSub.");
+            return null;
+        }
+        return Publisher.newBuilder(config.get("pubsub-topic-name")).build();
+    }
+
+    private Producer<String, String> kafkaProducer(Map<String, String> config) {
+        if (!config.containsKey("kafka-broker-list") || !config.containsKey("kafka-topic-name")) {
+            LOG.warn("Logging Plugin requires [kafka-broker-list] and [kafka-topic-name] when using Kafka.");
+            return null;
+        }
+        LOG.info("Setting up Kafka Producer");
         Properties props = new Properties();
         TOPIC_NAME = config.get("kafka-topic-name");
         SERVICE_NAME = config.get("service-name");
-
-        props.put("bootstrap.servers", kafkaBrokerList);
-        props.put("acks", acksValue);
+        props.put("bootstrap.servers", config.get("kafka-broker-list"));
+        props.put("acks", 0);
         props.put("retries", 0);
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
@@ -60,19 +110,12 @@ public class QueryLogEventListener implements EventListener
         props.put("ssl.keystore.password", config.getOrDefault("ssl-keystore-password", null));
         props.put("ssl.key.password", config.getOrDefault("ssl-key-password", null));
 
-        producer = new KafkaProducer<>(props);
+        return new KafkaProducer<>(props);
     }
 
-    @Override
-    public void queryCompleted(QueryCompletedEvent queryCompletedEvent)
-    {
-        if (producer == null) {
-            log.debug("Kafka Producer is not set. Presto logs will not be written to Kafka!");
-            return;
-        }
+    private JSONObject createQueryEventJson(QueryCompletedEvent queryCompletedEvent) {
         JSONObject queryEventJson = new JSONObject();
         boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
         queryEventJson.put("service_name", SERVICE_NAME);
         queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
@@ -85,20 +128,47 @@ public class QueryLogEventListener implements EventListener
         queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
         queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
         queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
-        queryEventJson.put("event_timestamp", getCurrentTimeStamp(sdf));
+        queryEventJson.put("event_timestamp", DATE_FORMAT.format(new Date(System.currentTimeMillis())));
 
-        log.debug("Sending " + queryEventJson.toString() + " to Kafka Topic: " + TOPIC_NAME);
-
-        producer.send(new ProducerRecord<>(TOPIC_NAME, queryCompletedEvent.getMetadata().getQueryId(), queryEventJson.toString()));
-        log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " text `" + queryCompletedEvent.getMetadata().getQuery() + "`");
-        log.debug("QID " + queryCompletedEvent.getMetadata().getQueryId() + " cpu time (minutes): " + queryCompletedEvent.getStatistics().getCpuTime().getSeconds()/60 + " wall time (minutes): " + queryCompletedEvent.getStatistics().getWallTime().getSeconds()/60.0);
+        return queryEventJson;
     }
 
-    public static String getCurrentTimeStamp(SimpleDateFormat sdf)
-    {
-        long currentTimeMilliseconds = System.currentTimeMillis();
-        Date resultDate = new Date(currentTimeMilliseconds);
-        return sdf.format(resultDate);
-    }
+    @Override
+    public void queryCompleted(QueryCompletedEvent queryCompletedEvent) {
+        String qid = queryCompletedEvent.getMetadata().getQueryId();
+        String message = createQueryEventJson(queryCompletedEvent).toString();
 
+        if(USE_KAFKA) {
+            LOG.debug("Attempting to send query [{}] to Kafka.", qid);
+            producer.send(new ProducerRecord<>(TOPIC_NAME, qid, message));
+        }
+
+        if(USE_PUBSUB) {
+            ByteString data = ByteString.copyFromUtf8(message);
+            PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
+                    .setData(data)
+                    .build();
+
+            ApiFuture<String> future = publisher.publish(pubsubMessage);
+            ApiFutures.addCallback(future, new ApiFutureCallback<String>() {
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                    if (throwable instanceof ApiException) {
+                        ApiException apiException = ((ApiException) throwable);
+                        // details on the API exception
+                        LOG.info("Status Code: [{}]", apiException.getStatusCode().getCode());
+                        LOG.debug("Retryable: [{}]", apiException.isRetryable());
+                    }
+                    LOG.error("Error publishing message : {}", message);
+                }
+
+                @Override
+                public void onSuccess(String messageId) {
+                    // Once published, returns server-assigned message ids (unique within the topic)
+                    LOG.info("submitted message id: [{}]", messageId);
+                }
+            });
+        }
+    }
 }
