@@ -74,25 +74,30 @@ public class QueryLogEventListener implements EventListener {
         }
 
         if(USE_PUBSUB) {
-            try {
-                publisher = pubSubPublisher(config);
-            } catch (IOException e) {
-                LOG.error("PubSub Publisher not setup. Ignoring Publishing to PubSub.");
+            publisher = pubSubPublisher(config);
+            if(publisher == null) {
+                LOG.warn("PubSub Publisher not setup. Ignoring Publishing to PubSub.");
                 USE_PUBSUB = false;
             }
         }
     }
 
-    private Publisher pubSubPublisher(Map<String, String> config) throws IOException {
+    private Publisher pubSubPublisher(Map<String, String> config) {
         if(!config.containsKey("pubsub-topic-name")) {
             LOG.warn("Logging Plugin requires [pubsub-topic-name] when using PubSub.");
             return null;
         }
+
         String topicId = config.get("pubsub-topic-name");
         ProjectTopicName topicName = ProjectTopicName.of(PROJECT_ID, topicId);
         LOG.debug("topicName: " + topicName.toString());
-        Publisher pub = Publisher.newBuilder(topicName).build();
-        return pub;
+        try {
+            Publisher pub = Publisher.newBuilder(topicName).build();
+            return pub;
+        } catch (IOException e){
+            LOG.error("Couldn't build PubSub Publisher: " + e.getMessage());
+        }
+        return null;
     }
 
     private Producer<String, String> kafkaProducer(Map<String, String> config) {
