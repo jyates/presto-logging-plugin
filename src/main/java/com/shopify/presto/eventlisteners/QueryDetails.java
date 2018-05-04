@@ -63,6 +63,9 @@ public class QueryDetails {
 
     public static QueryDetails parseQueryDetails(String queryText) {
         SqlParser parser = new SqlParser();
+        if (queryText.lastIndexOf(';') > -1) {
+            queryText = queryText.substring(0, queryText.lastIndexOf(';'));
+        }
         Statement stmt = parser.createStatement(queryText, new ParsingOptions());
         String operation = stmt.getClass().getSimpleName();
         AstTableVisitor v = new AstTableVisitor();
