@@ -130,27 +130,29 @@ public class QueryLogEventListener implements EventListener {
         JSONObject queryEventJson = new JSONObject();
         boolean queryFailed = queryCompletedEvent.getFailureInfo().isPresent();
 
+        queryEventJson.put("service_name", SERVICE_NAME);
+        queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
+        queryEventJson.put("cpu_time", queryCompletedEvent.getStatistics().getCpuTime().getSeconds());
+        queryEventJson.put("wall_time", queryCompletedEvent.getStatistics().getWallTime().getSeconds());
+        queryEventJson.put("start_time", queryCompletedEvent.getCreateTime().toString());
+        queryEventJson.put("end_time", queryCompletedEvent.getEndTime().toString());
+        queryEventJson.put("queued_time", queryCompletedEvent.getStatistics().getQueuedTime().getSeconds());
+        queryEventJson.put("query_text", queryCompletedEvent.getMetadata().getQuery());
+        queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
+        queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
+        queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
+        queryEventJson.put("event_timestamp", DATE_FORMAT.format(new Date(System.currentTimeMillis())));
+
+        //Extended field details
         try {
             QueryDetails queryDetails = QueryDetails.parseQueryDetails(queryCompletedEvent.getMetadata().getQuery());
             queryEventJson.put("query_operation", queryDetails.getOperation());
             queryEventJson.put("query_target_table", queryDetails.getTargetTable());
             queryEventJson.put("query_from_tables", queryDetails.getFromTablesWithoutCTEs().toArray());
-            queryEventJson.put("service_name", SERVICE_NAME);
-            queryEventJson.put("query_id", queryCompletedEvent.getMetadata().getQueryId());
-            queryEventJson.put("cpu_time", queryCompletedEvent.getStatistics().getCpuTime().getSeconds());
-            queryEventJson.put("wall_time", queryCompletedEvent.getStatistics().getWallTime().getSeconds());
-            queryEventJson.put("start_time", queryCompletedEvent.getCreateTime().toString());
-            queryEventJson.put("end_time", queryCompletedEvent.getEndTime().toString());
-            queryEventJson.put("queued_time", queryCompletedEvent.getStatistics().getQueuedTime().getSeconds());
-            queryEventJson.put("query_text", queryCompletedEvent.getMetadata().getQuery());
-            queryEventJson.put("query_status", queryFailed ? "FAILURE" : "SUCCESS");
-            queryEventJson.put("failure_message", queryFailed ? queryCompletedEvent.getFailureInfo().get().getErrorCode().getName() : null);
-            queryEventJson.put("user", queryCompletedEvent.getContext().getUser());
-            queryEventJson.put("event_timestamp", DATE_FORMAT.format(new Date(System.currentTimeMillis())));
+
         } catch (Throwable t) {
             LOG.warn("Error parsing query, not including details: " + t.getMessage());
         }
-
         return queryEventJson;
     }
 
