@@ -23,14 +23,12 @@
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-spi</artifactId>
-            <scope>provided</scope>
             <version>0.198</version>
         </dependency>
 
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-parser</artifactId>
-            <scope>provided</scope>
             <version>0.198</version>
         </dependency>
 
