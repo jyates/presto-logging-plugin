@@ -15,6 +15,8 @@ package com.shopify.presto.eventlisteners;
 
 import com.facebook.presto.spi.eventlistener.EventListener;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
+import com.google.cloud.ServiceOptions;
+import com.google.pubsub.v1.ProjectTopicName;
 import io.airlift.log.Logger;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -39,6 +41,7 @@ import java.util.Date;
 
 public class QueryLogEventListener implements EventListener {
     private static final Logger LOG = Logger.get(QueryLogEventListener.class);
+    private static final String PROJECT_ID = ServiceOptions.getDefaultProjectId();
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static String TOPIC_NAME;
     private static String SERVICE_NAME;
@@ -79,12 +82,17 @@ public class QueryLogEventListener implements EventListener {
             }
         }
     }
+
     private Publisher pubSubPublisher(Map<String, String> config) throws IOException {
         if(!config.containsKey("pubsub-topic-name")) {
             LOG.warn("Logging Plugin requires [pubsub-topic-name] when using PubSub.");
             return null;
         }
-        return Publisher.newBuilder(config.get("pubsub-topic-name")).build();
+        String topicId = config.get("pubsub-topic-name");
+        ProjectTopicName topicName = ProjectTopicName.of(PROJECT_ID, topicId);
+        LOG.debug("topicName: " + topicName.toString());
+        Publisher pub = Publisher.newBuilder(topicName).build();
+        return pub;
     }
 
     private Producer<String, String> kafkaProducer(Map<String, String> config) {
@@ -97,7 +105,7 @@ public class QueryLogEventListener implements EventListener {
         TOPIC_NAME = config.get("kafka-topic-name");
         SERVICE_NAME = config.get("service-name");
         props.put("bootstrap.servers", config.get("kafka-broker-list"));
-        props.put("acks", 0);
+        props.put("acks", "0"); //must be a string for some reason
         props.put("retries", 0);
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
@@ -139,7 +147,7 @@ public class QueryLogEventListener implements EventListener {
         String message = createQueryEventJson(queryCompletedEvent).toString();
 
         if(USE_KAFKA) {
-            LOG.debug("Attempting to send query [{}] to Kafka.", qid);
+            LOG.debug("Attempting to send query " + qid + " to Kafka.");
             producer.send(new ProducerRecord<>(TOPIC_NAME, qid, message));
         }
 
@@ -148,7 +156,6 @@ public class QueryLogEventListener implements EventListener {
             PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
                     .setData(data)
                     .build();
-
             ApiFuture<String> future = publisher.publish(pubsubMessage);
             ApiFutures.addCallback(future, new ApiFutureCallback<String>() {
 
@@ -157,16 +164,16 @@ public class QueryLogEventListener implements EventListener {
                     if (throwable instanceof ApiException) {
                         ApiException apiException = ((ApiException) throwable);
                         // details on the API exception
-                        LOG.info("Status Code: [{}]", apiException.getStatusCode().getCode());
-                        LOG.debug("Retryable: [{}]", apiException.isRetryable());
+                        LOG.info("Status Code: " + apiException.getStatusCode().getCode());
+                        LOG.info("Retryable: " + apiException.isRetryable());
                     }
-                    LOG.error("Error publishing message : {}", message);
+                    LOG.error("Error publishing message: " + message);
                 }
 
                 @Override
                 public void onSuccess(String messageId) {
                     // Once published, returns server-assigned message ids (unique within the topic)
-                    LOG.info("submitted message id: [{}]", messageId);
+                    LOG.info("submitted message id: " + messageId);
                 }
             });
         }
