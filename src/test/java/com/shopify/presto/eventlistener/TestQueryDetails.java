@@ -12,7 +12,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseSelectSimple() {
-        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1;");
+        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1");
         assertEquals( newHashSet("t1"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals("", d.getTargetTable());
@@ -22,7 +22,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseSelectSubquery() {
-        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1, (SELECT a, b FROM t2);");
+        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1, (SELECT a, b FROM t2)");
         assertEquals(newHashSet("t1", "t2"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals("", d.getTargetTable());
@@ -32,7 +32,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseSelectSubqueryWithAlias() {
-        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1, (SELECT a, b FROM t2) x;");
+        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1, (SELECT a, b FROM t2) x");
         assertEquals(newHashSet("t1", "t2"), d.getFromTables());
         assertEquals(newHashSet("x"), d.getAliasTables());
         assertEquals("", d.getTargetTable());
@@ -42,7 +42,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseJoin() {
-        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1 as y JOIN (SELECT a, b FROM t2) x ON (x.a = y.a);");
+        QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1 as y JOIN (SELECT a, b FROM t2) x ON (x.a = y.a)");
         assertEquals(newHashSet("t1", "t2"), d.getFromTables());
         assertEquals(newHashSet("x", "y"), d.getAliasTables());
         assertEquals("", d.getTargetTable());
@@ -52,7 +52,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseSelectCTE() {
-        QueryDetails d = QueryDetails.parseQueryDetails("WITH x as (SELECT a, b FROM t2) SELECT * FROM t1 JOIN x ON (e.a = t1.a);");
+        QueryDetails d = QueryDetails.parseQueryDetails("WITH x as (SELECT a, b FROM t2) SELECT * FROM t1 JOIN x ON (e.a = t1.a)");
         assertEquals(newHashSet("t1", "t2", "x"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals("", d.getTargetTable());
@@ -63,7 +63,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseInsertSimple() {
-        QueryDetails d = QueryDetails.parseQueryDetails("INSERT INTO t2 SELECT * FROM t1;");
+        QueryDetails d = QueryDetails.parseQueryDetails("INSERT INTO t2 SELECT * FROM t1");
         assertEquals(newHashSet("t1"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals("t2", d.getTargetTable());
@@ -73,7 +73,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseCreateTable() {
-        QueryDetails d = QueryDetails.parseQueryDetails("CREATE TABLE x (c1 VARCHAR);");
+        QueryDetails d = QueryDetails.parseQueryDetails("CREATE TABLE x (c1 VARCHAR)");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals( "x", d.getTargetTable());
@@ -83,7 +83,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseCreateTableAsSelect() {
-        QueryDetails d = QueryDetails.parseQueryDetails("CREATE TABLE x AS SELECT * FROM y;");
+        QueryDetails d = QueryDetails.parseQueryDetails("CREATE TABLE x AS SELECT * FROM y");
         assertEquals(newHashSet("y"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals( "x", d.getTargetTable());
@@ -93,7 +93,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseCreateView() {
-        QueryDetails d = QueryDetails.parseQueryDetails("CREATE VIEW x AS SELECT * FROM y;");
+        QueryDetails d = QueryDetails.parseQueryDetails("CREATE VIEW x AS SELECT * FROM y");
         assertEquals(newHashSet("y"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals( "x", d.getTargetTable());
@@ -103,7 +103,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseDropTable() {
-        QueryDetails d = QueryDetails.parseQueryDetails("DROP TABLE x;");
+        QueryDetails d = QueryDetails.parseQueryDetails("DROP TABLE x");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals( "x", d.getTargetTable());
@@ -113,7 +113,7 @@ public class TestQueryDetails {
 
     @Test
     public void testParseDropView() {
-        QueryDetails d = QueryDetails.parseQueryDetails("DROP VIEW x;");
+        QueryDetails d = QueryDetails.parseQueryDetails("DROP VIEW x");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals( "x", d.getTargetTable());

@@ -151,7 +151,8 @@ public class QueryLogEventListener implements EventListener {
             queryEventJson.put("query_from_tables", queryDetails.getFromTablesWithoutCTEs().toArray());
 
         } catch (Throwable t) {
-            LOG.warn("Error parsing query, not including details: " + t.getMessage());
+            LOG.warn("Error parsing query, not including details: " + t.getMessage() + ", query: '"
+                    + queryCompletedEvent.getMetadata().getQuery() + "'");
         }
         return queryEventJson;
     }
