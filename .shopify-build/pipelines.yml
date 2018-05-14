@@ -1,0 +1,15 @@
+containers:
+  default:
+    docker: alpine:latest
+  production:
+    application: Shopify/presto-logging-plugin
+    environment: production
+
+pipelines:
+  presto-logging-plugin:
+    steps:
+      - label: Tests
+        timeout: 5m
+        run:
+          - echo "Hello World"
+
