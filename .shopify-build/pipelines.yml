@@ -1,0 +1,14 @@
+containers:
+  default:
+    docker: maven:3.5.3-jdk-8-alpine
+  production:
+    application: Shopify/presto-logging-plugin
+    environment: production
+
+pipelines:
+  presto-logging-plugin:
+    steps:
+      - label: Tests
+        timeout: 5m
+        run:
+          - mvn clean test
