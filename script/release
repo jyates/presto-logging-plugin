@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+_build_jar() {
+  mvn clean install
+}
+
+_publish_jar() {
+  package_cloud push --url https://packages.shopify.io/ public target/logging-plugin-*-jar-with-dependencies.jar
+}
+
+main() {
+  _build_jar
+
+  local tags=$(git tag -l --points-at HEAD)
+  if [ -z "${tags}" ]; then
+    echo "Not a tagged commit, not performing release."
+    exit
+  fi
+
+  _publish_jar
+}
