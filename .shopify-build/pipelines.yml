@@ -17,5 +17,7 @@ pipelines:
     steps:
       - label: Release
         timeout: 5m
+        git:
+          history: true
         run:
           - script/release
