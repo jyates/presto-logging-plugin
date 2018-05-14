@@ -1,3 +1,0 @@
-deploy:
-  override:
-    - script/release
