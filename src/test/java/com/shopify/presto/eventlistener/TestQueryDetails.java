@@ -120,4 +120,14 @@ public class TestQueryDetails {
         assertEquals( Collections.emptySet(), d.getCTETables());
         assertEquals("DropView", d.getOperation());
     }
+
+    @Test
+    public void testDecimalLiteral() {
+        QueryDetails d = QueryDetails.parseQueryDetails("SELECT 100.0");
+        assertEquals(Collections.emptySet(), d.getFromTables());
+        assertEquals(Collections.emptySet(), d.getAliasTables());
+        assertEquals( "", d.getTargetTable());
+        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("Query", d.getOperation());
+    }
 }
