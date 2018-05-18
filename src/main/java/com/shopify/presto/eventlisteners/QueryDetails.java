@@ -63,7 +63,7 @@ public class QueryDetails {
 
     public static QueryDetails parseQueryDetails(String queryText) {
         SqlParser parser = new SqlParser();
-        Statement stmt = parser.createStatement(queryText, new ParsingOptions());
+        Statement stmt = parser.createStatement(queryText, new ParsingOptions(ParsingOptions.DecimalLiteralTreatment.AS_DECIMAL));
         String operation = stmt.getClass().getSimpleName();
         AstTableVisitor v = new AstTableVisitor();
         AstTableVisitor.TableVisitorContext ctx = new AstTableVisitor.TableVisitorContext();
