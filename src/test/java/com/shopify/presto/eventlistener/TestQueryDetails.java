@@ -13,7 +13,7 @@ public class TestQueryDetails {
     @Test
     public void testParseSelectSimple() {
         QueryDetails d = QueryDetails.parseQueryDetails("SELECT * FROM t1");
-        assertEquals( newHashSet("t1"), d.getFromTables());
+        assertEquals(newHashSet("t1"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
         assertEquals("", d.getTargetTable());
         assertEquals(Collections.emptySet(), d.getCTETables());
@@ -76,8 +76,8 @@ public class TestQueryDetails {
         QueryDetails d = QueryDetails.parseQueryDetails("CREATE TABLE x (c1 VARCHAR)");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
-        assertEquals( "x", d.getTargetTable());
-        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("x", d.getTargetTable());
+        assertEquals(Collections.emptySet(), d.getCTETables());
         assertEquals("CreateTable", d.getOperation());
     }
 
@@ -86,8 +86,8 @@ public class TestQueryDetails {
         QueryDetails d = QueryDetails.parseQueryDetails("CREATE TABLE x AS SELECT * FROM y");
         assertEquals(newHashSet("y"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
-        assertEquals( "x", d.getTargetTable());
-        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("x", d.getTargetTable());
+        assertEquals(Collections.emptySet(), d.getCTETables());
         assertEquals("CreateTableAsSelect", d.getOperation());
     }
 
@@ -96,8 +96,8 @@ public class TestQueryDetails {
         QueryDetails d = QueryDetails.parseQueryDetails("CREATE VIEW x AS SELECT * FROM y");
         assertEquals(newHashSet("y"), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
-        assertEquals( "x", d.getTargetTable());
-        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("x", d.getTargetTable());
+        assertEquals(Collections.emptySet(), d.getCTETables());
         assertEquals("CreateView", d.getOperation());
     }
 
@@ -106,8 +106,8 @@ public class TestQueryDetails {
         QueryDetails d = QueryDetails.parseQueryDetails("DROP TABLE x");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
-        assertEquals( "x", d.getTargetTable());
-        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("x", d.getTargetTable());
+        assertEquals(Collections.emptySet(), d.getCTETables());
         assertEquals("DropTable", d.getOperation());
     }
 
@@ -116,8 +116,8 @@ public class TestQueryDetails {
         QueryDetails d = QueryDetails.parseQueryDetails("DROP VIEW x");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
-        assertEquals( "x", d.getTargetTable());
-        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("x", d.getTargetTable());
+        assertEquals(Collections.emptySet(), d.getCTETables());
         assertEquals("DropView", d.getOperation());
     }
 
@@ -126,8 +126,8 @@ public class TestQueryDetails {
         QueryDetails d = QueryDetails.parseQueryDetails("SELECT 100.0");
         assertEquals(Collections.emptySet(), d.getFromTables());
         assertEquals(Collections.emptySet(), d.getAliasTables());
-        assertEquals( "", d.getTargetTable());
-        assertEquals( Collections.emptySet(), d.getCTETables());
+        assertEquals("", d.getTargetTable());
+        assertEquals(Collections.emptySet(), d.getCTETables());
         assertEquals("Query", d.getOperation());
     }
 }
