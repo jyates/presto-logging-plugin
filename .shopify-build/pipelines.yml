@@ -12,3 +12,9 @@ pipelines:
         timeout: 5m
         run:
           - mvn clean test
+  presto-logging-plugin-release:
+    steps:
+      - label: Release
+        timeout: 5m
+        run:
+          - script/release

@@ -10,6 +10,9 @@ _publish_jar() {
 }
 
 main() {
+  apk update
+  apk add git build-base ruby ruby-dev
+  gem install package_cloud --no-ri --no-rdoc
   _build_jar
 
   local tags=$(git tag -l --points-at HEAD)
