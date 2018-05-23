@@ -6,7 +6,11 @@ _build_jar() {
 }
 
 _publish_jar() {
-  package_cloud push --url https://packages.shopify.io/ public target/logging-plugin-*-jar-with-dependencies.jar
+  local version="$1"
+  package_cloud push --url https://packages.shopify.io/ \
+    --coordinates com.shopify.data.presto:presto-logging-plugin:$version \
+    shopify/public/java/1.8  \
+    target/logging-plugin-$version-jar-with-dependencies.jar 
 }
 
 main() {
@@ -18,7 +22,8 @@ main() {
     exit
   fi
 
-  _publish_jar
+  # Assume the only tag is of the form "v<VERSION>"
+  _publish_jar "${tags:1}"
 }
 
 main
