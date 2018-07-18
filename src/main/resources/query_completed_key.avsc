@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "namespace": "presto.query.events",
+  "name": "query_completed_key",
+  "fields": [
+    {
+      "name": "query_id",
+      "type": "string"
+    }
+  ]
+}

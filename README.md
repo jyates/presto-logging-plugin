@@ -10,3 +10,57 @@ A Presto plugin which logs completed queries with execution stats to Kafka or Go
 - Bump the version of the package in pom.xml
 - Tag the commit bumping the version with a tag of the form `v<VERSION>` like `v2.6`
 - Push the commit and the tag, the ShipIt pipeline will build the JAR and push it to PackageCloud
+
+## Configuration
+
+### Kafka
+
+#### Required
+
+ * kafka-topic-name: name of the topic to write the events
+ * kafka-broker-list: list of bootstrap servers
+
+#### Optional
+
+ * kafka-acks
+    * default: 0
+ * kafka-retries
+    * default: 0
+ * kafka-batch.size
+    * default: 16384
+ * kafka-compression-type
+    * default: gzip
+ * kafka-linger-ms
+    * default: 1
+ * kafka-buffer.bytes
+    * default: 33554432
+
+##### Security
+
+ * security-protocol
+    * default: PLAINTEXT
+ * ssl-keystore-location
+    * default: _null_
+ * ssl-keystore-password
+    * default: _null_
+ * ssl-key-password
+    * default: _null_
+ * ssl-truststore-location
+    * default: _null_
+    * truststore password must be the same as the keystore password (and therefore does not provide an option)
+
+#### Mode: String
+
+ * kafka-message.mode="string"
+
+Just write simple string JSON representation of the event
+
+#### Mode: Avro
+
+ * kafka-message.mode="avro"
+
+Write avro-encoded messages where schemas are stored in a schema registry
+
+##### Required
+
+ * kafka-schema-registry: schema registry url

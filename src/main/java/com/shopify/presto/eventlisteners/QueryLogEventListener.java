@@ -15,43 +15,41 @@ package com.shopify.presto.eventlisteners;
 
 import com.facebook.presto.spi.eventlistener.EventListener;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
-import com.google.cloud.ServiceOptions;
-import com.google.pubsub.v1.ProjectTopicName;
-import io.airlift.log.Logger;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.rpc.ApiException;
+import com.google.cloud.ServiceOptions;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
-
-
+import com.shopify.presto.eventlisteners.kafka.AvroKafkaProducer;
+import com.shopify.presto.eventlisteners.kafka.StringKafkaProducer;
+import io.airlift.log.Logger;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Properties;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
+import java.util.Properties;
 
 public class QueryLogEventListener implements EventListener {
     private static final Logger LOG = Logger.get(QueryLogEventListener.class);
     private static final String PROJECT_ID = ServiceOptions.getDefaultProjectId();
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static String TOPIC_NAME;
     private static String SERVICE_NAME;
     private static boolean USE_KAFKA;
     private static boolean USE_PUBSUB;
-    private Producer<String, String> producer;
+    private com.shopify.presto.eventlisteners.kafka.KafkaProducer producer;
     private Publisher publisher = null;
 
 
-    public QueryLogEventListener(Map<String, String> config) {
+    public QueryLogEventListener(Map<String, String> config) throws IOException {
         USE_KAFKA = Boolean.valueOf(config.getOrDefault("use-kafka", "false"));
         USE_PUBSUB = Boolean.valueOf(config.getOrDefault("use-pubsub", "false"));
 
@@ -68,8 +66,7 @@ public class QueryLogEventListener implements EventListener {
         if(USE_KAFKA) {
             producer = kafkaProducer(config);
             if(producer == null) {
-                LOG.warn("Kafka Producer not setup. Ignoring Producing to Kafka.");
-                USE_KAFKA = false;
+                throw new RuntimeException("Kafka was not able to be setup!");
             }
         }
 
@@ -100,7 +97,8 @@ public class QueryLogEventListener implements EventListener {
         return null;
     }
 
-    private Producer<String, String> kafkaProducer(Map<String, String> config) {
+    private com.shopify.presto.eventlisteners.kafka.KafkaProducer kafkaProducer(Map<String, String> config) throws
+        IOException {
         if (!config.containsKey("kafka-broker-list") || !config.containsKey("kafka-topic-name")) {
             LOG.warn("Logging Plugin requires [kafka-broker-list] and [kafka-topic-name] when using Kafka.");
             return null;
@@ -110,20 +108,35 @@ public class QueryLogEventListener implements EventListener {
         TOPIC_NAME = config.get("kafka-topic-name");
         SERVICE_NAME = config.get("service-name");
         props.put("bootstrap.servers", config.get("kafka-broker-list"));
-        props.put("acks", "0"); //must be a string for some reason
-        props.put("retries", 0);
-        props.put("batch.size", 16384);
-        props.put("linger.ms", 1);
-        props.put("buffer.memory", 33554432);
-        props.put("key.serializer", StringSerializer.class);
-        props.put("value.serializer", StringSerializer.class);
+        props.put("acks", config.getOrDefault("kafka-acks", "0")); //must be a string for some reason
+        props.put("retries", Integer.parseInt(config.getOrDefault("kafka-retries", "0")));
+        props.put("batch.size",  Integer.parseInt(config.getOrDefault("kafka-batch.size", "16384")));
+        props.put("compression.type", config.getOrDefault("kafka-compression-type", "gzip"));
+        props.put("linger.ms",  Integer.parseInt(config.getOrDefault("kafka-linger-ms", "1")));
+        props.put("buffer.memory",  Long.parseLong(config.getOrDefault("kafka-buffer.bytes", "33554432")));
         props.put("ssl.client.auth", "requested");
         props.put("security.protocol", config.getOrDefault("security-protocol", "PLAINTEXT"));
         props.put("ssl.keystore.location", config.getOrDefault("ssl-keystore-location", null));
-        props.put("ssl.keystore.password", config.getOrDefault("ssl-keystore-password", null));
+        String password = config.getOrDefault("ssl-keystore-password", null);
+        props.put("ssl.keystore.password", password);
         props.put("ssl.key.password", config.getOrDefault("ssl-key-password", null));
+        props.put("ssl.truststore.location", config.getOrDefault("ssl-truststore-location", null));
+        props.put("ssl.truststore.password", password);
 
-        return new KafkaProducer<>(props);
+        String mode = config.getOrDefault("kafka-message.mode", "string");
+        switch(mode){
+            case "string":
+                props.put("key.serializer", StringSerializer.class);
+                props.put("value.serializer", StringSerializer.class);
+                return new StringKafkaProducer(new KafkaProducer<>(props));
+            case "avro":
+                props.put("schema-registry-url", config.get("kafka-schema-registry"));
+                props.put("key.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+                props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+                return new AvroKafkaProducer(new KafkaProducer<>(props));
+            default:
+                throw new IllegalArgumentException("Unexpected kafka message mode: " + mode);
+        }
     }
 
     private JSONObject createQueryEventJson(QueryCompletedEvent queryCompletedEvent) {
@@ -159,15 +172,18 @@ public class QueryLogEventListener implements EventListener {
 
     @Override
     public void queryCompleted(QueryCompletedEvent queryCompletedEvent) {
-        String qid = queryCompletedEvent.getMetadata().getQueryId();
-        String message = createQueryEventJson(queryCompletedEvent).toString();
+        JSONObject json = createQueryEventJson(queryCompletedEvent);
 
         if(USE_KAFKA) {
-            LOG.debug("Attempting to send query " + qid + " to Kafka.");
-            producer.send(new ProducerRecord<>(TOPIC_NAME, qid, message));
+            if(LOG.isDebugEnabled()) {
+                String qid = queryCompletedEvent.getMetadata().getQueryId();
+                LOG.debug("Attempting to send query " + qid + " to Kafka.");
+            }
+            producer.send(TOPIC_NAME, json);
         }
 
         if(USE_PUBSUB) {
+            String message = json.toString();
             ByteString data = ByteString.copyFromUtf8(message);
             PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
                     .setData(data)

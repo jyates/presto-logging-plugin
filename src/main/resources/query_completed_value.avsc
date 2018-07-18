@@ -1,0 +1,71 @@
+{
+  "type": "record",
+  "namespace": "presto.query.events",
+  "name": "query_completed_value",
+  "fields": [
+    {
+      "name": "event_timestamp",
+      "type": "string"
+    },
+    {
+      "name": "query_id",
+      "type": "string"
+    },
+    {
+      "name": "service_name",
+      "type": "string"
+    },
+    {
+      "name": "cpu_time",
+      "type": "long"
+    },
+    {
+      "name": "wall_time",
+      "type": "long"
+    },
+    {
+      "name": "start_time",
+      "type": "string"
+    },
+    {
+      "name": "end_time",
+      "type": "string"
+    },
+    {
+      "name": "queued_time",
+      "type": "long"
+    },
+    {
+      "name": "query_text",
+      "type": "string"
+    },
+    {
+      "name": "query_status",
+      "type": "string"
+    },
+    {
+      "name": "failure_message",
+      "type": [ "null", "string" ],
+      "default": null
+    },
+    {
+      "name": "user",
+      "type": "string"
+    },
+    {
+      "name": "query_operation",
+      "type": ["null", "string"],
+      "default": null
+    },
+    {
+      "name": "query_target_table",
+      "type": ["null", "string"],
+      "default": null
+    },
+    {
+      "name": "query_from_tables",
+      "type": ["null", {"type": "array", "items": "string"}],
+      "default": null
+    }
+  ]
+}

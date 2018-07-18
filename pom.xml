@@ -7,13 +7,41 @@
     <artifactId>logging-plugin</artifactId>
     <description>Shopify logging plugin</description>
 
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <id>confluent</id>
+            <url>http://packages.confluent.io/maven/</url>
+        </repository>
+        <repository>
+            <id>cloudera</id>
+            <url>https://artifactory.dev.teslamotors.com/artifactory/cloudera/</url>
+        </repository>
+    </repositories>
+
     <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <confluent.version>3.3.0</confluent.version>
+        <avro.version>1.7.6-cdh5.15.0</avro.version>
+        <presto.version>0.198</presto.version>
+        <mockito.version>1.10.19</mockito.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>io.confluent</groupId>
+            <artifactId>kafka-avro-serializer</artifactId>
+            <version>${confluent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>log</artifactId>
@@ -23,13 +51,13 @@
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-spi</artifactId>
-            <version>0.198</version>
+            <version>${presto.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-parser</artifactId>
-            <version>0.198</version>
+            <version>${presto.version}</version>
         </dependency>
 
         <dependency>
@@ -50,14 +78,35 @@
             <version>0.42.1-beta</version>
         </dependency>
 
+        <!-- Test dependencies -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>RELEASE</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
         <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>query_completed_key.avsc</include>
+                    <include>query_completed_value.avsc</include>
+                </includes>
+            </resource>
             <resource>
                 <directory>src/main/resources/services</directory>
                 <targetPath>META-INF/services</targetPath>

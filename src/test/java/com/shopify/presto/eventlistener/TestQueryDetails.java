@@ -1,12 +1,12 @@
 package com.shopify.presto.eventlistener;
 
 import com.shopify.presto.eventlisteners.QueryDetails;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.util.Collections;
 
 import static com.google.common.collect.Sets.newHashSet;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class TestQueryDetails {
 

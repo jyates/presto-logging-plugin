@@ -16,6 +16,7 @@ package com.shopify.presto.eventlisteners;
 import com.facebook.presto.spi.eventlistener.EventListener;
 import com.facebook.presto.spi.eventlistener.EventListenerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 
 public class QueryLogEventListenerFactory implements EventListenerFactory
@@ -29,6 +30,10 @@ public class QueryLogEventListenerFactory implements EventListenerFactory
     @Override
     public EventListener create(Map<String, String> config)
     {
-        return new QueryLogEventListener(config);
+        try {
+            return new QueryLogEventListener(config);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
